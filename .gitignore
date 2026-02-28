@@ -1,0 +1,43 @@
+# ─── JavaScript / Node.js ───────────────────────────────────────────────────
+node_modules/
+dist/
+build/
+.cache/
+.parcel-cache/
+.next/
+out/
+.nuxt/
+.vite/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+*.log
+
+# Runtime / lock files (keep one; remove the others if unused)
+# package-lock.json
+# yarn.lock
+# pnpm-lock.yaml
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Editor / OS
+.DS_Store
+Thumbs.db
+
+# ─── Rust ────────────────────────────────────────────────────────────────────
+target/
+**/*.rs.bk
+Cargo.lock        # remove this line if this is a binary crate (keep lock for binaries)
+
+# ─── Misc ────────────────────────────────────────────────────────────────────
+*.swp
+*.swo
+.idea/
+.vscode/
