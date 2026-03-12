@@ -12,8 +12,6 @@ RUN wasm-pack build rust --target web --out-dir /app/js/src/wasm
 # Stage 2: Build JS → static files
 FROM node:22-slim AS js-builder
 
-RUN npm install -g yarn
-
 WORKDIR /app
 COPY js/ js/
 
