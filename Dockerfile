@@ -24,10 +24,7 @@ WORKDIR /app/js
 RUN yarn install --frozen-lockfile
 RUN yarn build
 
-# Stage 3: Serve with nginx (static files are in js/dist)
-FROM nginx:alpine AS final
+# Stage 3: Export stage — static files only
+FROM scratch AS final
 
-COPY --from=js-builder /app/js/dist /usr/share/nginx/html
-
-EXPOSE 80
-CMD ["nginx", "-g", "daemon off;"]
+COPY --from=js-builder /app/js/dist /dist/
