@@ -332,7 +332,9 @@ impl Board {
 
         let width = format!("{}px", COLS * (TILES_SIZE + TILES_MARGIN));
         let height = format!("{}px", ROWS * (TILES_SIZE + TILES_MARGIN));
+
         let style = stage.style();
+
         style.set_property("width", &width).unwrap();
         style.set_property("height", &height).unwrap();
 
