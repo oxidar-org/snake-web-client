@@ -28,6 +28,7 @@ jobs:
         with:
           context: .
           outputs: type=local,dest=./output
+          build-args: GITHUB_PAGES=true
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3

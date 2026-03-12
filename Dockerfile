@@ -18,6 +18,9 @@ COPY js/ js/
 # Copy WASM output from previous stage
 COPY --from=rust-builder /app/js/src/wasm js/src/wasm
 
+ARG GITHUB_PAGES
+ENV GITHUB_PAGES=$GITHUB_PAGES
+
 WORKDIR /app/js
 RUN yarn install --frozen-lockfile
 RUN yarn build
