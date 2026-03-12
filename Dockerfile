@@ -1,5 +1,5 @@
 # Stage 1: Build Rust → WASM
-FROM rust:1.85-slim AS rust-builder
+FROM rust:1.94-slim AS rust-builder
 
 RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
 RUN curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
