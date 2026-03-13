@@ -20,7 +20,7 @@ const TILES_MARGIN: usize = 1;
 const TILES_SIZE: usize = 10;
 const COLS: usize = 64;
 const ROWS: usize = 32;
-const SERVER_URL: &str = "ws://yamanote.proxy.rlwy.net:59780";
+const SERVER_URL: &str = "wss://yamanote.proxy.rlwy.net:59780";
 
 // ---------------------------------------------------------------------------
 // Color helpers
