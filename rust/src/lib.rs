@@ -1,11 +1,8 @@
 use std::cell::RefCell;
-use std::collections::HashMap;
 use std::rc::Rc;
 
 use log::{Level, info};
-use web_sys::{
-    BinaryType, Document, Element, ErrorEvent, HtmlElement, MessageEvent, WebSocket, window,
-};
+use web_sys::{BinaryType, Document, Element, HtmlElement, MessageEvent, WebSocket, window};
 
 use wasm_bindgen::prelude::*;
 
@@ -20,46 +17,7 @@ const TILES_MARGIN: usize = 1;
 const TILES_SIZE: usize = 10;
 const COLS: usize = 64;
 const ROWS: usize = 32;
-const SERVER_URL: &str = "wss://yamanote.proxy.rlwy.net:59780";
-
-// ---------------------------------------------------------------------------
-// Color helpers
-// ---------------------------------------------------------------------------
-
-fn hsv_to_rgb(h: f32, s: f32, v: f32) -> (u8, u8, u8) {
-    let c = v * s;
-    let x = c * (1.0 - ((h / 60.0) % 2.0 - 1.0).abs());
-    let m = v - c;
-
-    let (r1, g1, b1) = match h {
-        h if h < 60.0 => (c, x, 0.0),
-        h if h < 120.0 => (x, c, 0.0),
-        h if h < 180.0 => (0.0, c, x),
-        h if h < 240.0 => (0.0, x, c),
-        h if h < 300.0 => (x, 0.0, c),
-        _ => (c, 0.0, x),
-    };
-
-    (
-        ((r1 + m) * 255.0).round() as u8,
-        ((g1 + m) * 255.0).round() as u8,
-        ((b1 + m) * 255.0).round() as u8,
-    )
-}
-
-fn snake_hue(id: u8) -> f32 {
-    const START_HUES: [f32; 3] = [0.0, 120.0, 240.0];
-    if id < 3 {
-        START_HUES[id as usize]
-    } else {
-        (START_HUES[2] + (id as f32 - 2.0) * 137.50776) % 360.0
-    }
-}
-
-pub fn snake_color(id: u8) -> String {
-    let (r, g, b) = hsv_to_rgb(snake_hue(id), 0.85, 0.95);
-    format!("#{r:02X}{g:02X}{b:02X}")
-}
+const SERVER_URL: &str = "wss://snakes.hernan.rs";
 
 // ---------------------------------------------------------------------------
 // WASM setup
@@ -125,6 +83,7 @@ impl Tiles {
                 }
             })
         });
+
         Self(tiles)
     }
 
@@ -180,24 +139,11 @@ struct GameState {
     crowns: Vec<(String, u32)>,
     leaderboard: Vec<protocol::LeaderboardEntry>,
     pending_join: Option<Vec<u8>>,
-    /// Stable name → color-index map; first-seen order never changes.
-    player_color_idx: HashMap<String, u8>,
 }
 
 impl GameState {
     fn apply_state(&mut self, food: [u16; 2], snakes: Vec<SnakeData>) {
         self.food = Some(food);
-        // Assign a stable color index the first time we see each player.
-        let mut next_idx = self.player_color_idx.len() as u8;
-        for snake in &snakes {
-            self.player_color_idx
-                .entry(snake.name.clone())
-                .or_insert_with(|| {
-                    let idx = next_idx % 255;
-                    next_idx = next_idx.wrapping_add(1);
-                    idx
-                });
-        }
         self.snakes = snakes;
     }
 
@@ -219,10 +165,6 @@ impl GameState {
     }
 }
 
-// ---------------------------------------------------------------------------
-// Direction enum (exported to JS)
-// ---------------------------------------------------------------------------
-
 /// Direction values match the server protocol: 0=Up, 1=Right, 2=Down, 3=Left.
 #[wasm_bindgen]
 #[repr(u8)]
@@ -241,7 +183,6 @@ pub enum Direction {
 #[wasm_bindgen]
 pub struct Board {
     tiles: Tiles,
-    stage: HtmlElement,
     username: Option<String>,
     ws: WebSocket,
     state: Rc<RefCell<GameState>>,
@@ -256,7 +197,7 @@ fn ws_connect(state: Rc<RefCell<GameState>>) -> WebSocket {
     // Clone the Rc shares we need for each closure before any move happens
     let state_msg = Rc::clone(&state);
     let state_open = Rc::clone(&state);
-    drop(state); // all consumers have their own clone now
+    drop(state);
 
     // --- onmessage ---
     let onmessage = Closure::<dyn FnMut(_)>::new(move |e: MessageEvent| {
@@ -288,13 +229,16 @@ fn ws_connect(state: Rc<RefCell<GameState>>) -> WebSocket {
             log::warn!("received unknown message type");
         }
     });
+
     ws.set_onmessage(Some(onmessage.as_ref().unchecked_ref()));
     onmessage.forget();
 
     // --- onerror ---
-    let onerror = Closure::<dyn FnMut(_)>::new(move |e: ErrorEvent| {
-        log::error!("WebSocket error: {:?}", e.message());
+    // WebSocket fires a plain Event on error, not an ErrorEvent, so message() would be undefined.
+    let onerror = Closure::<dyn FnMut(_)>::new(move |_e: web_sys::Event| {
+        log::error!("WebSocket error");
     });
+
     ws.set_onerror(Some(onerror.as_ref().unchecked_ref()));
     onerror.forget();
 
@@ -309,10 +253,20 @@ fn ws_connect(state: Rc<RefCell<GameState>>) -> WebSocket {
             }
         }
     });
+
     ws.set_onopen(Some(onopen.as_ref().unchecked_ref()));
     onopen.forget();
 
     ws
+}
+
+#[derive(serde::Serialize)]
+struct LeaderboardEntry<'a> {
+    name: &'a str,
+    crowns: u32,
+    length: u16,
+    alive: bool,
+    color: String,
 }
 
 #[wasm_bindgen]
@@ -345,7 +299,6 @@ impl Board {
         Self {
             tiles: Tiles::build(&document, &stage),
             username: None,
-            stage,
             ws,
             state,
         }
@@ -398,17 +351,11 @@ impl Board {
 
         let state = self.state.borrow();
 
-        // Paint snakes — stable color per player
+        // Paint snakes using the server-assigned color
         for snake in state.snakes.iter() {
-            let idx = state
-                .player_color_idx
-                .get(&snake.name)
-                .copied()
-                .unwrap_or(0);
-            let color = snake_color(idx);
             for &[x, y] in &snake.body {
                 self.tiles
-                    .set_tile_kind(x as usize, y as usize, TileKind::Snake(color.clone()));
+                    .set_tile_kind(x as usize, y as usize, TileKind::Snake(snake.color.clone()));
             }
         }
 
@@ -432,27 +379,21 @@ impl Board {
     /// Returns the full leaderboard as JSON with per-player worm color, updated every 25 ticks.
     /// Shape: `[{"name":"alice","crowns":5,"length":4,"alive":true,"color":"#F24"}, ...]`
     pub fn leaderboard(&self) -> String {
-        #[derive(serde::Serialize)]
-        struct Entry<'a> {
-            name: &'a str,
-            crowns: u32,
-            length: u16,
-            alive: bool,
-            color: String,
-        }
         let state = self.state.borrow();
-        let entries: Vec<Entry> = state
+        let entries: Vec<LeaderboardEntry> = state
             .leaderboard
             .iter()
-            .map(|p| {
-                let idx = state.player_color_idx.get(&p.name).copied().unwrap_or(0);
-                Entry {
-                    name: &p.name,
-                    crowns: p.crowns,
-                    length: p.length,
-                    alive: p.alive,
-                    color: snake_color(idx),
-                }
+            .map(|p| LeaderboardEntry {
+                name: &p.name,
+                crowns: p.crowns,
+                length: p.length,
+                alive: p.alive,
+                color: state
+                    .snakes
+                    .iter()
+                    .find(|s| s.name == p.name)
+                    .map(|s| s.color.clone())
+                    .unwrap_or_default(),
             })
             .collect();
         serde_json::to_string(&entries).unwrap_or_else(|_| "[]".to_string())

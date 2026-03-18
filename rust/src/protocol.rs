@@ -36,6 +36,7 @@ pub struct SnakeData {
     pub body: Vec<[u16; 2]>,
     pub dir: u8,
     pub crowns: u32,
+    pub color: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

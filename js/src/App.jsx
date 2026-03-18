@@ -11,10 +11,10 @@ import init, {
 } from "./wasm";
 
 const KEY_TO_DIRECTION = {
-  ArrowUp:    Direction.Up,
+  ArrowUp: Direction.Up,
   ArrowRight: Direction.Right,
-  ArrowDown:  Direction.Down,
-  ArrowLeft:  Direction.Left,
+  ArrowDown: Direction.Down,
+  ArrowLeft: Direction.Left,
   w: Direction.Up,
   d: Direction.Right,
   s: Direction.Down,
@@ -22,10 +22,10 @@ const KEY_TO_DIRECTION = {
 };
 
 function App() {
-  const animationRef   = React.useRef();
-  const boardRef       = React.useRef();
-  const [username, setUsername]   = React.useState();
-  const [players,  setPlayers]    = React.useState([]);
+  const animationRef = React.useRef();
+  const boardRef = React.useRef();
+  const [username, setUsername] = React.useState();
+  const [players, setPlayers] = React.useState([]);
 
   React.useEffect(() => {
     if (username == undefined) return;
@@ -59,7 +59,7 @@ function App() {
         try {
           const data = JSON.parse(board.leaderboard());
           setPlayers(data);
-        } catch {}
+        } catch (err) { console.log(err) }
       };
       const lbInterval = setInterval(pollLeaderboard, 1000);
 
