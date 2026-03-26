@@ -351,11 +351,16 @@ impl Board {
 
         let state = self.state.borrow();
 
-        // Paint snakes using the server-assigned color
+        // Paint snakes using the server-assigned color; own worm is always white
         for snake in state.snakes.iter() {
+            let color = if self.username.as_deref() == Some(snake.name.as_str()) {
+                "#FFFFFF".to_string()
+            } else {
+                snake.color.clone()
+            };
             for &[x, y] in &snake.body {
                 self.tiles
-                    .set_tile_kind(x as usize, y as usize, TileKind::Snake(snake.color.clone()));
+                    .set_tile_kind(x as usize, y as usize, TileKind::Snake(color.clone()));
             }
         }
 

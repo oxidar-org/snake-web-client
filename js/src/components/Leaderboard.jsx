@@ -1,6 +1,6 @@
 import React from 'react';
 
-function Leaderboard({ players }) {
+function Leaderboard({ players, username }) {
   return (
     <aside className="leaderboard">
       <h2 className="leaderboard__title">Leaderboard</h2>
@@ -17,7 +17,7 @@ function Leaderboard({ players }) {
               {/* Name colored to match the player's worm */}
               <span
                 className="leaderboard__name"
-                style={{ color: p.color ?? '#fff' }}
+                style={{ color: p.color ?? '#fff', fontWeight: p.name === username ? 'bold' : 'normal' }}
               >
                 {p.name}
               </span>

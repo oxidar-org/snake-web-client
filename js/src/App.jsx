@@ -25,27 +25,33 @@ function App() {
   const animationRef = React.useRef();
   const boardRef = React.useRef();
   const [username, setUsername] = React.useState();
+  const [viewOnly, setViewOnly] = React.useState(false);
   const [players, setPlayers] = React.useState([]);
 
   React.useEffect(() => {
-    if (username == undefined) return;
+    if (username == undefined && !viewOnly) return;
 
     init().then(() => {
       SetupLogs();
 
       const board = Board.create();
-      board.join(username);
+      if (!viewOnly) {
+        board.join(username);
+      }
       boardRef.current = board;
 
-      // --- keyboard input ---
-      const handleKey = (e) => {
-        const dir = KEY_TO_DIRECTION[e.key];
-        if (dir !== undefined) {
-          e.preventDefault();
-          board.turn(dir);
-        }
-      };
-      window.addEventListener('keydown', handleKey);
+      // --- keyboard input (only in play mode) ---
+      let handleKey;
+      if (!viewOnly) {
+        handleKey = (e) => {
+          const dir = KEY_TO_DIRECTION[e.key];
+          if (dir !== undefined) {
+            e.preventDefault();
+            board.turn(dir);
+          }
+        };
+        window.addEventListener('keydown', handleKey);
+      }
 
       // --- render loop ---
       const drawLoop = () => {
@@ -64,21 +70,21 @@ function App() {
       const lbInterval = setInterval(pollLeaderboard, 1000);
 
       return () => {
-        window.removeEventListener('keydown', handleKey);
+        if (handleKey) window.removeEventListener('keydown', handleKey);
         cancelAnimationFrame(animationRef.current);
         clearInterval(lbInterval);
       };
     });
-  }, [username]);
+  }, [username, viewOnly]);
 
-  if (username == undefined) {
-    return <Login onLogin={(u) => setUsername(u)} />;
+  if (username == undefined && !viewOnly) {
+    return <Login onLogin={(u) => setUsername(u)} onWatch={() => setViewOnly(true)} />;
   }
 
   return (
     <div className="game-layout">
       <div className="stage" />
-      <Leaderboard players={players} />
+      <Leaderboard players={players} username={username} />
     </div>
   );
 }

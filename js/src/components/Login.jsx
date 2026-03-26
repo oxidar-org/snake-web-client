@@ -1,7 +1,7 @@
 import React from 'react';
 import './Login.css';
 
-const Login = ({ onLogin }) => {
+const Login = ({ onLogin, onWatch }) => {
     const [username, setUsername] = React.useState('');
 
     const handleSubmit = (e) => {
@@ -24,6 +24,9 @@ const Login = ({ onLogin }) => {
                 />
                 <button type="submit" disabled={!username.trim()}>
                     Start
+                </button>
+                <button type="button" onClick={onWatch}>
+                    Watch
                 </button>
             </form>
         </div>

@@ -69,8 +69,17 @@
   transition: background-color 0.3s ease;
 }
 
+.login-form button + button {
+  margin-top: 0.6rem;
+  background-color: #2a6496;
+}
+
 .login-form button:hover {
   background-color: #45a049;
+}
+
+.login-form button + button:hover {
+  background-color: #255380;
 }
 
 .login-form button:disabled {
