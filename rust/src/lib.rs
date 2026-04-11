@@ -15,8 +15,8 @@ use protocol::{ClientMessage, ServerMessage, SnakeData, encode};
 const STAGE_SELECTOR: &str = ".stage";
 const TILES_MARGIN: usize = 1;
 const TILES_SIZE: usize = 10;
-const COLS: usize = 64 * 2;
-const ROWS: usize = 32 * 2;
+const COLS: usize = 64;
+const ROWS: usize = 32;
 const SERVER_URL: &str = "wss://snakes.hernan.rs";
 
 // ---------------------------------------------------------------------------
